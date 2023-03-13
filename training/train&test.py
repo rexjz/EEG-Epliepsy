@@ -1,15 +1,15 @@
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from preprocess import pre_process
-from sklearn import svm
 from sklearn import metrics
+from sklearn import svm
 from sklearn.metrics import RocCurveDisplay
-from sklearn.datasets import make_classification
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import f1_score
 from sklearn.metrics import (precision_recall_curve,
                              PrecisionRecallDisplay)
-from sklearn.metrics import f1_score
 from sklearn.model_selection import LearningCurveDisplay, learning_curve
+from sklearn.model_selection import train_test_split
+
+from preprocess import pre_process
 
 dataset = pre_process()
 X_train, X_test, y_train, y_test = train_test_split(dataset['data'], dataset['targets'], test_size=0.3,

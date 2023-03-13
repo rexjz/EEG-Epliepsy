@@ -1,6 +1,5 @@
-import numpy as np
-from scipy.fftpack import fft, ifft
-from slicing import *
+from scipy.fftpack import fft
+from data_slicing.slicing import *
 import matplotlib.pyplot as plt
 import matplotlib
 

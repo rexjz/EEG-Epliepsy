@@ -1,12 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from sklearn import preprocessing
-import pywt
 import pywt.data
-import pandas as pd
-from slicing import sliced_data
-import math
+from data_slicing.slicing import sliced_data
 
 [normal_record_pieces, seizure_record_pieces] = record = sliced_data()[0]
 signal = normal_record_pieces[0]

@@ -1,5 +1,4 @@
-import numpy as np
-from slicing import *
+from data_slicing.slicing import *
 from util.FuzzyEntropy import *
 from EntropyHub._FuzzEn import FuzzEn
 import math

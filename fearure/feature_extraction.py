@@ -1,15 +1,14 @@
-import logging
 import os.path
 import numpy as np
 from scipy.stats import skew, kurtosis
 import math
 from EntropyHub._FuzzEn import FuzzEn
-from slicing import STEP
+from data_slicing.slicing import STEP
 from pandas import DataFrame
 import pandas as pd
 from constant import TIME_DOMAIN_FEATURE, FREQUENCY_DOMAIN_FEATURE
 from definitions import ROOT_DIR
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft
 from constant import THETA_FREQ_RANGE, DELTA_FREQ_RANGE, ALPHA_FREQ_RANGE, BETA_FREQ_RANGE, GAMMA_FREQ_RANGE, \
     SAMPLING_FREQUENCY
 import pywt

@@ -1,5 +1,5 @@
-from fearure.feature_extraction import frequency_domain_feature_extraction, feature_extraction_batching
-from slicing import sliced_data
+from fearure.feature_extraction import feature_extraction_batching
+from data_slicing.slicing import sliced_data
 
 [normal_record_pieces, seizure_record_pieces] = record = sliced_data()[0]
 signal_batch = seizure_record_pieces[0:2]

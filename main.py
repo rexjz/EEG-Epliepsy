@@ -1,4 +1,4 @@
-from slicing import *
+from data_slicing.slicing import *
 from fearure.feature_extraction import feature_extraction_batching
 import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed

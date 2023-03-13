@@ -7,9 +7,10 @@ from definitions import ROOT_DIR
 
 record_path= os.path.join(ROOT_DIR, 'data', 'p10_Record1.edf')
 raw = mne.io.read_raw_edf(record_path)
+t = type(raw)
 # raw.crop(0, 500).load_data()
 raw.crop(0, 60).load_data()
-
+t = type(raw)
 
 # pick some channels that clearly show heartbeats and blinks
 raw.plot(show_scrollbars=True)
