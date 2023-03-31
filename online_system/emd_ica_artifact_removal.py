@@ -5,7 +5,7 @@ import PyEMD
 import mne
 import numpy as np
 import pandas as pd
-from EntropyHub import SampEn
+from EntropyHub import SampEn, FuzzEn
 from mne.io import RawArray, Raw
 from mne.preprocessing import ICA
 from numpy import ndarray
@@ -13,6 +13,7 @@ from pandas import DataFrame
 from scipy.stats import kurtosis
 
 from online_system.definitions import freq
+from online_system.utils import get_confidence_interval
 
 
 def one_d_emd_decompose(data):
@@ -73,7 +74,12 @@ def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=100, no_fi
                 'kurt': [kurt]
             }), res], sort=False, ignore_index=True
         )
-    filtered_imf_info = res.query('entropy < {} and kurt < {}'.format(entropy_threshold, kurt_threshold))
+    entropy_confidence_interval = get_confidence_interval(list(res['entropy']), 0.95)
+    kurt_confidence_interval = get_confidence_interval(list(res['kurt']), 0.95)
+    filtered_imf_info = res.query(
+        'entropy > {} and kurt < {}'.format(entropy_confidence_interval[0], kurt_confidence_interval[1])
+    )
+    pprint(res)
     return filtered_imf_info.index
 
 
@@ -82,7 +88,7 @@ def ICA_decompose(data, input_ch_names) -> Tuple[Any, ICA, RawArray]:
     new_info = mne.create_info(ch_names, ch_types=["eeg"] * len(ch_names), sfreq=freq)
     raw = mne.io.RawArray(data, new_info)
     filt_raw = raw.copy().filter(l_freq=1., h_freq=None)
-    n_components = 50 if len(ch_names) > 50 else int(0.8 * len(ch_names))
+    n_components = 60 if len(ch_names) > 75 else int(0.8 * len(ch_names))
     ica = ICA(n_components=n_components, max_iter='auto', random_state=97, method='picard')
     ica.fit(filt_raw)
     ica_components = ica.get_sources(raw)
@@ -90,7 +96,7 @@ def ICA_decompose(data, input_ch_names) -> Tuple[Any, ICA, RawArray]:
     return ica_components, ica, raw
 
 
-def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=1.0, kurt_threshold=50, no_filtering=False, logging=True):
+def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=2, kurt_threshold=30, no_filtering=False, logging=True):
     data = ica_components_raw.get_data()
     res = DataFrame(data={'ch_name': [], 'entropy': [], 'kurt': []})
     channel_number = data.shape[0]
@@ -103,7 +109,12 @@ def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=1.0
                 'kurt': [kurt]
             }), res], sort=False, ignore_index=True
         )
-    filtered_ica_component_info = res.query('entropy < {} and kurt < {}'.format(entropy_threshold, kurt_threshold))
+    # entropy_confidence_interval = get_confidence_interval(list(res['entropy']), 0.95)
+    # kurt_confidence_interval = get_confidence_interval(list(res['kurt']), 0.95)
+    filtered_ica_component_info = res.query(
+        'entropy > {} and kurt < {}'.format(entropy_threshold, kurt_threshold)
+    )
+    # filtered_ica_component_info = res.query('entropy < {} and kurt < {}'.format(entropy_threshold, kurt_threshold))
     return filtered_ica_component_info.index
 
 
