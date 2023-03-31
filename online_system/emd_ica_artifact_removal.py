@@ -42,17 +42,19 @@ def get_imfs(data, ch_names):
     return imf_data, imf_ch_names
 
 
-def one_d_imf_sqa(imf, entropy_threshold=2, kurt_threshold=150) -> Tuple[Any, Union[ndarray, Iterable, int, float]]:
+def one_d_imf_sqa(imf) -> Tuple[Any, Union[ndarray, Iterable, int, float]]:
     data = np.squeeze(imf)
-    (res, *_) = SampEn(data, m=3)
+    tolerance = np.std(data) * 0.15
+    (res, *_) = SampEn(data, m=3, r=tolerance)
     entropy = res[0] - res[1]
     kurt = kurtosis(data)
     return entropy, kurt
 
 
-def ica_component_sqa(ica_component, entropy_threshold=2.0, kurt_threshold=150) -> Tuple[float, float]:
+def ica_component_sqa(ica_component) -> Tuple[float, float]:
     data = np.squeeze(ica_component)
-    (res, *_) = SampEn(data, m=3)
+    tolerance = np.std(data) * 0.15
+    (res, *_) = SampEn(data, m=3, r=tolerance)
     entropy = res[0] - res[1]
     kurt = kurtosis(data)
     return entropy, kurt
@@ -63,7 +65,7 @@ def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=100, no_fi
     res = DataFrame(data={'ch_name': [], 'entropy': [], 'kurt': []})
     channel_number = data.shape[0]
     for i in range(0, channel_number):
-        entropy, kurt = one_d_imf_sqa(data[i], entropy_threshold, kurt_threshold)
+        entropy, kurt = one_d_imf_sqa(data[i])
         res = pd.concat([
             DataFrame(data={
                 'ch_name': [ch_names[i]],
