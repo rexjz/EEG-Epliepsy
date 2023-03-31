@@ -102,8 +102,8 @@ def testICAFiltering():
         remaining_sources -= 20
     ica_components = ica.get_sources(raw)
     res = ica_components_filtering(ica_components._data, ica_components.info["ch_names"])
-    excluded_ica = res.query('entropy < 1.5 and kurt < 75')
-    ica_picked_indexes = np.array(excluded_ica.index).tolist()
+    included_ica = res.query('entropy < 1.5 and kurt < 75')
+    ica_picked_indexes = np.array(included_ica.index).tolist()
     ica_after_picking = raw.copy()
     ica.apply(ica_after_picking, include=ica_picked_indexes)
     mne.export.export_raw("imfs_after_ICA_filtering3.edf", ica_after_picking, overwrite=True)
