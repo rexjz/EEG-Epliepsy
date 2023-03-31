@@ -95,7 +95,7 @@ def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=1.0
     res = DataFrame(data={'ch_name': [], 'entropy': [], 'kurt': []})
     channel_number = data.shape[0]
     for i in range(0, channel_number):
-        entropy, kurt = ica_component_sqa(data[i], entropy_threshold, kurt_threshold)
+        entropy, kurt = ica_component_sqa(data[i])
         res = pd.concat([
             DataFrame(data={
                 'ch_name': ['component ' + str(i+1)],
