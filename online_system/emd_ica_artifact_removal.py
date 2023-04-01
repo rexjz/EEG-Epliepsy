@@ -158,5 +158,6 @@ def imfs_merge(imf_raw: Raw):
     print(eeg_channels.shape)
     return raw
 
+
 def artifact_removal(data, ch_names):
     get_imfs(data, ch_names)
