@@ -88,7 +88,7 @@ def ICA_decompose(data, input_ch_names) -> Tuple[Any, ICA, RawArray]:
     new_info = mne.create_info(ch_names, ch_types=["eeg"] * len(ch_names), sfreq=freq)
     raw = mne.io.RawArray(data, new_info)
     filt_raw = raw.copy().filter(l_freq=1., h_freq=None)
-    n_components = 60 if len(ch_names) > 75 else int(0.8 * len(ch_names))
+    n_components = 40 if len(ch_names) > 50 else len(ch_names)
     ica = ICA(n_components=n_components, max_iter='auto', random_state=97, method='picard')
     ica.fit(filt_raw)
     ica_components = ica.get_sources(raw)
