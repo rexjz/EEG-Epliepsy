@@ -13,11 +13,10 @@ from pandas import DataFrame
 from scipy.stats import kurtosis
 
 from online_system.definitions import freq
-from online_system.utils import get_confidence_interval
 
 
 def one_d_emd_decompose(data):
-    eemd = PyEMD.CEEMDAN(trials=10)
+    eemd = PyEMD.CEEMDAN(trials=5)
     eemd.ceemdan(data)
     imfs, res = eemd.get_imfs_and_residue()
     return imfs
@@ -61,8 +60,9 @@ def ica_component_sqa(ica_component) -> Tuple[float, float]:
     return entropy, kurt
 
 
-def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=100, no_filtering=False, logging=True) -> List[
+def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=30, no_filtering=False, logging=True) -> List[
     int]:
+    print('entropy_threshold ' + str(entropy_threshold), 'kurt_threshold ' + str(kurt_threshold))
     res = DataFrame(data={'ch_name': [], 'entropy': [], 'kurt': []})
     channel_number = data.shape[0]
     for i in range(0, channel_number):
@@ -74,10 +74,10 @@ def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=100, no_fi
                 'kurt': [kurt]
             }), res], sort=False, ignore_index=True
         )
-    entropy_confidence_interval = get_confidence_interval(list(res['entropy']), 0.95)
-    kurt_confidence_interval = get_confidence_interval(list(res['kurt']), 0.95)
+    # entropy_confidence_interval = get_confidence_interval(list(res['entropy']), 0.95)
+    # kurt_confidence_interval = get_confidence_interval(list(res['kurt']), 0.95)
     filtered_imf_info = res.query(
-        'entropy > {} and kurt < {}'.format(entropy_confidence_interval[0], kurt_confidence_interval[1])
+        'entropy > {} and kurt < {}'.format(entropy_threshold, kurt_threshold)
     )
     pprint(res)
     return filtered_imf_info.index
@@ -96,7 +96,7 @@ def ICA_decompose(data, input_ch_names, data_freq=freq) -> Tuple[Any, ICA, RawAr
     return ica_components, ica, raw
 
 
-def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=2, kurt_threshold=30, no_filtering=False, logging=True):
+def ica_components_filtering(ica_components_raw, ch_names, entropy_threshold=2, kurt_threshold=50, no_filtering=False, logging=True):
     data = ica_components_raw.get_data()
     res = DataFrame(data={'ch_name': [], 'entropy': [], 'kurt': []})
     channel_number = data.shape[0]

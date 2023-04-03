@@ -16,7 +16,6 @@ def get_threshold(data):
 def soft_thresholding(data):
     np_data = np.array(data)
     thresh = get_threshold(np_data)
-    print("thresh: " + str(thresh))
     gaps = np.abs(np_data) - thresh
     np_data[gaps < 0] = 0
     return np_data
