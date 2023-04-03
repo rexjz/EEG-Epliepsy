@@ -1,9 +1,8 @@
-import numpy as np
 import mne
-import wt
+import numpy as np
 from sklearn.decomposition import FastICA
 
-from online_system import emd_ica_artifact_removal
+import wt
 
 
 def wica_for_data(data: np.ndarray, ch_names, freq):
