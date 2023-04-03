@@ -83,9 +83,9 @@ def imf_filtering(data, ch_names, entropy_threshold=2, kurt_threshold=100, no_fi
     return filtered_imf_info.index
 
 
-def ICA_decompose(data, input_ch_names) -> Tuple[Any, ICA, RawArray]:
+def ICA_decompose(data, input_ch_names, data_freq=freq) -> Tuple[Any, ICA, RawArray]:
     ch_names = input_ch_names if not isinstance(input_ch_names, np.ndarray) else list(input_ch_names)
-    new_info = mne.create_info(ch_names, ch_types=["eeg"] * len(ch_names), sfreq=freq)
+    new_info = mne.create_info(ch_names, ch_types=["eeg"] * len(ch_names), sfreq=data_freq)
     raw = mne.io.RawArray(data, new_info)
     filt_raw = raw.copy().filter(l_freq=1., h_freq=None)
     n_components = 40 if len(ch_names) > 50 else len(ch_names)

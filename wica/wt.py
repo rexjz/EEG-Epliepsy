@@ -20,3 +20,21 @@ def soft_thresholding(data):
     gaps = np.abs(np_data) - thresh
     np_data[gaps < 0] = 0
     return np_data
+
+
+def wavelet_thresholding(data, wavelet='coif5'):
+    coffs = stationary_wt(data, wavelet=wavelet, level=6)
+    threshed_wt_coff = []
+    for level_coff in coffs:
+        threshed_wt_coff.append({
+            'a': soft_thresholding(level_coff['a']),
+            'd': soft_thresholding(level_coff['d'])
+        })
+    artifact_component = inverse_wt(threshed_wt_coff, wavelet=wavelet)
+    artifact_free_data = np.array(data) - np.array(artifact_component)
+    return artifact_free_data
+
+
+def inverse_wt(coff, wavelet='coif5'):
+    artifact_component = pywt.iswtn(coff, 'coif5')
+    return artifact_component
