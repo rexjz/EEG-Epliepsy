@@ -1,8 +1,11 @@
 import os.path
+import sys
+
 import numpy as np
 from scipy.stats import skew, kurtosis
 import math
 from EntropyHub._FuzzEn import FuzzEn
+from EntropyHub import SampEn
 from data_slicing.slicing import STEP
 from pandas import DataFrame
 import pandas as pd
@@ -12,6 +15,8 @@ from scipy.fftpack import fft
 from constant import THETA_FREQ_RANGE, DELTA_FREQ_RANGE, ALPHA_FREQ_RANGE, BETA_FREQ_RANGE, GAMMA_FREQ_RANGE, \
     SAMPLING_FREQUENCY
 import pywt
+import yasa
+from scipy import signal as sci_signal
 feature_home = os.path.join(ROOT_DIR, 'data', 'feature')
 if not os.path.exists(feature_home):
     os.makedirs(feature_home)
@@ -61,6 +66,7 @@ def time_domain_feature_extraction(signal, piece_index=0):
     std = np.std(signal, axis=1)
     rms = np.zeros([channel_number, ])
     fuzzy_en = np.zeros([channel_number, ])
+    sample_en = np.zeros([channel_number, ])
     skew_value = skew(signal, axis=1)
     kurt = kurtosis(signal, axis=1)
     abs_max = np.amax(np.abs(signal), axis=1)
@@ -69,8 +75,11 @@ def time_domain_feature_extraction(signal, piece_index=0):
         rms[channel_idx] = math.sqrt(
             np.sum(np.power(current_channel_data, 2)) / STEP
         )
-        (res, *_) = FuzzEn(current_channel_data, r=(0.15, (0.1 + std[channel_idx]) / 2), m=3)
+        tolerance = np.std(current_channel_data) * 0.15
+        (res, *_) = FuzzEn(current_channel_data, r=(tolerance, (0.1 + std[channel_idx]) / 2), m=3)
         fuzzy_en[channel_idx] = res[0] - res[1]
+        (res, *_) = SampEn(current_channel_data, m=3, r=tolerance)
+        sample_en[channel_idx] = res[0] - res[1]
     # TODO: 归一化
     feature_row = {
         'mean': mean,
@@ -81,6 +90,7 @@ def time_domain_feature_extraction(signal, piece_index=0):
         'kurt': kurt,
         'abs_max': abs_max,
         'fuzzy_en': fuzzy_en,
+        'sample_en': sample_en,
         'piece_index': piece_index_column
     }
     return feature_row
@@ -93,6 +103,24 @@ def frequency_domain_feature_extraction(signal, piece_index=0):
     features.update(fft_feature_extraction(signal, channel_number, N))
     features.update(wavelet_feature_extraction(signal, channel_number, N))
     return features
+
+
+def band_power_feature_extraction(signal: np.ndarray, sf=500):
+    if(signal.ndim ==1):
+        len = signal.shape[0]
+    else:
+        len = signal.shape[1]
+    win = 4 * sf
+    freqs, psd = sci_signal.welch(signal, sf, nperseg=win)
+    res = yasa.bandpower_from_psd(psd, freqs)
+    r_res = res.iloc[:, 1:8]
+    r_res.columns = [
+        'delta_power_ratio', 'theta_power_ratio',
+        'alpha_power_ratio', 'sigma_power_ratio',
+        'beta_power_ratio', 'gamma_power_ratio',
+        'total_power'
+    ]
+    return r_res
 
 
 def fft_feature_extraction(signal, channel_number, N):
@@ -115,7 +143,7 @@ def fft_feature_extraction(signal, channel_number, N):
             power_ratios[index][channel_idx] = np.sum(section) / total_power
     return {
         'theta_power_ratio': theta_power_ratio,
-        'delta_power_ratio': delta_power_ratio,
+        'delta_power_ratio' : delta_power_ratio,
         'alpha_power_ratio': alpha_power_ratio,
         'beta_power_ratio': beta_power_ratio,
         'gamma_power_ratio': gamma_power_ratio,
