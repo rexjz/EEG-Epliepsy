@@ -6,7 +6,6 @@ FREQUENCY_DOMAIN_FEATURE = ['theta_power_ratio',
                             'alpha_power_ratio',
                             'beta_power_ratio',
                             'gamma_power_ratio',
-                            'shannon_wavelet_entropy',
                             'piece_index']
 SAMPLING_FREQUENCY = 500
 # [inclusive, exclusive]

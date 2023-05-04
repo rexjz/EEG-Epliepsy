@@ -1,5 +1,6 @@
 import os.path
 import sys
+from pprint import pprint
 
 import numpy as np
 from scipy.stats import skew, kurtosis
@@ -17,6 +18,7 @@ from constant import THETA_FREQ_RANGE, DELTA_FREQ_RANGE, ALPHA_FREQ_RANGE, BETA_
 import pywt
 import yasa
 from scipy import signal as sci_signal
+
 feature_home = os.path.join(ROOT_DIR, 'data', 'feature')
 if not os.path.exists(feature_home):
     os.makedirs(feature_home)
@@ -27,12 +29,15 @@ if not os.path.exists(feature_home):
 #   0: normal record
 #   1: seizure record
 def feature_extraction_batching(batch, datatype, info):
-    feature_table = DataFrame(columns=set(TIME_DOMAIN_FEATURE + FREQUENCY_DOMAIN_FEATURE), dtype='float32')
+    feature_table = DataFrame(dtype='float32')
     for piece_index, piece in enumerate(batch):
         new_feature = {}
         new_feature.update(time_domain_feature_extraction(piece, piece_index))
         new_feature.update(frequency_domain_feature_extraction(piece, piece_index))
         new_df = DataFrame(new_feature)
+        bp = band_power_feature_extraction(piece)
+        new_df = new_df.join(bp, how='outer')
+        new_df = new_df.join(wp_entropy(piece), how='outer')
         feature_table = pd.concat([feature_table, new_df], ignore_index=True)
     if datatype == 0:
         p = os.path.join(feature_home, info + "-features-normal.csv")
@@ -42,7 +47,7 @@ def feature_extraction_batching(batch, datatype, info):
         p = os.path.join(feature_home, info + "-features-seizure.csv")
         # save feature_table as seizure feature
         feature_table.to_csv(p)
-    return "done"
+    return feature_table
 
 
 # return channel_number, signal_length
@@ -99,14 +104,13 @@ def time_domain_feature_extraction(signal, piece_index=0):
 def frequency_domain_feature_extraction(signal, piece_index=0):
     channel_number, N = get_signal_info(signal)
     piece_index_column = np.full([channel_number, ], piece_index)
-    features = { 'piece_index': piece_index_column }
-    features.update(fft_feature_extraction(signal, channel_number, N))
-    features.update(wavelet_feature_extraction(signal, channel_number, N))
+    features = {'piece_index': piece_index_column}
+    # features.update(wavelet_feature_extraction(signal, channel_number, N))
     return features
 
 
 def band_power_feature_extraction(signal: np.ndarray, sf=500):
-    if(signal.ndim ==1):
+    if (signal.ndim == 1):
         len = signal.shape[0]
     else:
         len = signal.shape[1]
@@ -135,7 +139,7 @@ def fft_feature_extraction(signal, channel_number, N):
     delta_range = ftt_freq_range2index_slice(DELTA_FREQ_RANGE, N)
     alpha_range = ftt_freq_range2index_slice(ALPHA_FREQ_RANGE, N)
     beta_range = ftt_freq_range2index_slice(BETA_FREQ_RANGE, N)
-    gamma_range = ftt_freq_range2index_slice(GAMMA_FREQ_RANGE(N/2), N)
+    gamma_range = ftt_freq_range2index_slice(GAMMA_FREQ_RANGE(N / 2), N)
     for channel_idx in range(0, channel_number):
         total_power = np.sum(amplitude_spectrum[channel_idx])
         for index, slice_obj in enumerate([theta_range, delta_range, alpha_range, beta_range, gamma_range]):
@@ -143,7 +147,7 @@ def fft_feature_extraction(signal, channel_number, N):
             power_ratios[index][channel_idx] = np.sum(section) / total_power
     return {
         'theta_power_ratio': theta_power_ratio,
-        'delta_power_ratio' : delta_power_ratio,
+        'delta_power_ratio': delta_power_ratio,
         'alpha_power_ratio': alpha_power_ratio,
         'beta_power_ratio': beta_power_ratio,
         'gamma_power_ratio': gamma_power_ratio,
@@ -157,6 +161,38 @@ def ftt_freq_range2index_slice(freq_range, n):
 def ftt_freq2index(freq, n):
     # index * fs / N = freq <==> freq * N / fs = index
     return int(freq * n / SAMPLING_FREQUENCY)
+
+
+def compute_shannon_entropy(signal):
+    """Here, we will compute nonnormalized shannon entropy.
+    We will basically implement MATLAB function 'wentropy'.
+    Input: signal should be 1D numpy array."""
+    return -np.nansum(signal ** 2 * np.log(signal ** 2))  # nansum to exclude pesky terms like "0*np.log(0)"
+
+
+def lowpassFiltering(data, cutoff_freq=35, fs=500):
+    sos = sci_signal.butter(4, cutoff_freq, btype='lowpass', output='sos', fs=fs)
+    return sci_signal.sosfilt(sos, data)
+
+
+def wp_entropy(signal: np.ndarray, maxlevel=3, wavelet='db5'):
+    filtedData = lowpassFiltering(signal)
+    feature_matrix_wav_packet_entropy = np.repeat(np.nan, filtedData.shape[0] * 2 ** maxlevel) \
+        .reshape(filtedData.shape[0], 2 ** maxlevel)
+    for i in range(filtedData.shape[0]):
+        wp = pywt.WaveletPacket(filtedData[i, :], wavelet=wavelet, maxlevel=maxlevel)  # Wavelet packet transformation
+        packet_names = [node.path for node in wp.get_level(maxlevel, "natural")]  # Packet node names.
+        for j in range(len(packet_names)):
+            new_wp = pywt.WaveletPacket(data=None, wavelet=wavelet, maxlevel=maxlevel)
+            new_wp[packet_names[j]] = wp[packet_names[j]].data
+            reconstructed_signal = new_wp.reconstruct(
+                update=False)  # Signal reconstruction from wavelet packet coefficients
+            feature_matrix_wav_packet_entropy[i, j] = compute_shannon_entropy(
+                reconstructed_signal)  # Entropy of reconstructed signal for every node
+    wp_entropy = {}
+    for column in range(0, feature_matrix_wav_packet_entropy.shape[1]):
+        wp_entropy['wp_entropy_' + str(column)] = feature_matrix_wav_packet_entropy[:, column]
+    return DataFrame(wp_entropy)
 
 
 def wavelet_feature_extraction(signal, channel_number, N):
