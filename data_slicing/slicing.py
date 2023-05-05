@@ -3,20 +3,31 @@ import logging
 import os
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, date, time
 from pathlib import Path
 
 import mne
 import numpy as np
 import scipy.io
-from concurrent.futures import ThreadPoolExecutor
+from mne.export import export_raw
+
 from data_slicing.metadata import metadata
 from definitions import EpilepticEEGDataset
 from definitions import EpilepticEEGDataset_segments
+from preprocessing import emd_ica
 from wica import wi
 
 freq = 500  # 500Hz
 STEP = 2 * freq  # 2 seconds
+
+
+TOTAL_PROCESS = 1
+CURRENT_PROCESS = 1
+if len(sys.argv) == 3:
+    TOTAL_PROCESS = int(sys.argv[1])
+    CURRENT_PROCESS = int(sys.argv[2])
+    print(sys.argv[2] + " / " + sys.argv[1])
 
 
 # convert_time_to_index(record_time, seizure_time)
@@ -36,7 +47,13 @@ def get_data(record) -> [np.array, np.array]:
     if not os.path.exists(record_path):
         logging.error(record_path + " does not exit")
         return
-    data = mne.io.read_raw_edf(record_path, preload=True, exclude=["Manual"])
+    data = mne.io.read_raw_edf(record_path, preload=True, include=["EEG Fp1-Ref", "EEG Fp2-Ref", "EEG F3-Ref",
+                                                                   "EEG F4-Ref", "EEG C3-Ref", "EEG C4-Ref",
+                                                                   "EEG P3-Ref", "EEG P4-Ref", "EEG O1-Ref",
+                                                                   "EEG O2-Ref", "EEG F7-Ref", "EEG F8-Ref",
+                                                                   "EEG T3-Ref", "EEG T4-Ref", "EEG T5-Ref",
+                                                                   "EEG T6-Ref", "EEG Fz-Ref", "EEG A1-Ref",
+                                                                   "EEG A2-Ref"])
 
     seizure_record = []
     index_mat = np.array([0, 0])
@@ -104,7 +121,7 @@ def sliced_data(patient_code="p10"):
     return res[patient_code]["record"]
 
 
-SEGMENT_LENGTH = 12800
+SEGMENT_LENGTH = 12000
 SEGMENT_STORE = os.path.join(EpilepticEEGDataset, "segments")
 
 
@@ -187,6 +204,8 @@ def get_segment_paths(patient_code):
 # slice_and_save_data()
 # slice_and_save_data("p11")
 # slice_and_save_data("p12")
+# slice_and_save_data("p13")
+# slice_and_save_data("p14")
 # print("end")
 
 
@@ -196,12 +215,14 @@ def preprocess_segment(patient_code="p10"):
     sfreq = info['sfreq']
     paths = seizure_segment_paths.copy()
     paths.extend(normal_segment_paths)
+    paths_len = len(paths)
+    step = int(paths_len / TOTAL_PROCESS)
+    paths = paths[step * (CURRENT_PROCESS - 1): step * CURRENT_PROCESS]
+    print(step * (CURRENT_PROCESS - 1), " ", step * CURRENT_PROCESS)
     for segment_path in paths:
         try:
             print(segment_path)
             path = Path(segment_path.replace("segments", "preprocessed_segments"))
-            if path.exists():
-                continue
             if not os.path.exists(path.parent.absolute()):
                 os.makedirs(path.parent.absolute())
             info_path = os.path.join(Path(segment_path).parent.parent.absolute(), 'info.json')
@@ -211,7 +232,18 @@ def preprocess_segment(patient_code="p10"):
             mat_dict = scipy.io.loadmat(segment_path)
             data = mat_dict['data']
             res = wi.wi_for_data(data, ch_names, freq=sfreq)
-            scipy.io.savemat(path.absolute(), {'data': res})
+            if not path.exists():
+                scipy.io.savemat(path.absolute(), {'data': res})
+            raw_without_artifacts = emd_ica.emd_ica(res, ch_names=ch_names, freq=sfreq)
+
+            arv_path = Path(segment_path.replace("segments", "artifact_free_segments").replace(".mat", ".edf"))
+            print(arv_path)
+            if arv_path.exists():
+                continue
+            if not os.path.exists(arv_path.parent.absolute()):
+                os.makedirs(arv_path.parent.absolute())
+            export_raw(arv_path, raw_without_artifacts, fmt='edf',
+                       add_ch_type=True, overwrite=True)
         except Exception as e:
             print("error", e)
     return 0
@@ -220,12 +252,10 @@ def preprocess_segment(patient_code="p10"):
 def do_preprocess_segment():
     if __name__ == '__main__':
         pool = ThreadPoolExecutor(max_workers=3)
-        # results = list(pool.map(preprocess_segment, [
-        #     ("p10"), ("p11"), ("p12")
-        # ]))
         results = list(pool.map(preprocess_segment, [
-            ("p11")
+            ("p10"), ("p11"), ("p12"), "p13", "p14"
         ]))
+    # preprocess_segment("p10")
 
 
 do_preprocess_segment()

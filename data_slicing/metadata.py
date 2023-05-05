@@ -56,11 +56,44 @@ metadata = {
     "p13": {
         "records": [
             {
+                "name": "p13_Record1.edf",
+                "seizure_time": [(2, 31, 9, 52)]
+            },
+            {
+                "name": "p13_Record2.edf",
+                "seizure_time": [(3, 33, 4, 25),
+                   (4, 38, 59, 16)]
+            },
+            {
                 "name": "p13_Record3.edf",
-                "seizure_time": [(6, 40, 30, 82),  # no need for the replicates
-                                 (7, 21, 36, 164),
-                                 (8, 37, 48, 113)]
+                "seizure_time": [(6, 45, 51, 18)]
+            },
+            {
+                "name": "p13_Record4.edf",
+                "seizure_time": [(10, 51, 41, 30),
+                   (12, 18, 22, 24)]
             }
+        ]
+    },
+    "p14": {
+        "records": [
+            {
+                "name": "p14_Record1.edf",
+                "seizure_time": [(14, 32, 2, 28),
+                   (15, 34, 32, 134)]
+            },
+            {
+                "name": "p14_Record2.edf",
+                "seizure_time": [(16, 20, 58, 32),  # no need for the replicates
+                   (17, 50, 56, 10)]
+            },
+            {
+                "name": "p14_Record3.edf",
+                "seizure_time": [(20, 20, 46, 31),
+                   (21, 2, 4, 26),
+                   (21, 27, 49, 40),
+                   (21, 50, 24, 40)]
+            },
         ]
     }
 }
