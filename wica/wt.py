@@ -3,7 +3,7 @@ import pywt
 
 
 def stationary_wt(data, level, wavelet='coif5'):
-    return pywt.swtn(data, wavelet=wavelet, level=6, start_level=0)
+    return pywt.swtn(data, wavelet=wavelet, level=6)
 
 
 def get_threshold(data):

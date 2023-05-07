@@ -92,7 +92,6 @@ def ICA_decompose(data, input_ch_names, data_freq=freq) -> Tuple[Any, ICA, RawAr
     ica = ICA(n_components=n_components, max_iter='auto', random_state=97, method='picard')
     ica.fit(filt_raw)
     ica_components = ica.get_sources(raw)
-    # print(ica_components)
     return ica_components, ica, raw
 
 

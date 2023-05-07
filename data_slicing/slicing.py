@@ -24,10 +24,10 @@ STEP = 2 * freq  # 2 seconds
 
 TOTAL_PROCESS = 1
 CURRENT_PROCESS = 1
-if len(sys.argv) == 3:
-    TOTAL_PROCESS = int(sys.argv[1])
-    CURRENT_PROCESS = int(sys.argv[2])
-    print(sys.argv[2] + " / " + sys.argv[1])
+# if len(sys.argv) == 3:
+#     TOTAL_PROCESS = int(sys.argv[1])
+#     CURRENT_PROCESS = int(sys.argv[2])
+#     print(sys.argv[2] + " / " + sys.argv[1])
 
 
 # convert_time_to_index(record_time, seizure_time)
@@ -121,7 +121,7 @@ def sliced_data(patient_code="p10"):
     return res[patient_code]["record"]
 
 
-SEGMENT_LENGTH = 12000
+SEGMENT_LENGTH = 12800
 SEGMENT_STORE = os.path.join(EpilepticEEGDataset, "segments")
 
 
@@ -234,8 +234,8 @@ def preprocess_segment(patient_code="p10"):
             res = wi.wi_for_data(data, ch_names, freq=sfreq)
             if not path.exists():
                 scipy.io.savemat(path.absolute(), {'data': res})
-            raw_without_artifacts = emd_ica.emd_ica(res, ch_names=ch_names, freq=sfreq)
 
+            raw_without_artifacts = emd_ica.emd_ica(res, ch_names=ch_names, freq=sfreq)
             arv_path = Path(segment_path.replace("segments", "artifact_free_segments").replace(".mat", ".edf"))
             print(arv_path)
             if arv_path.exists():
